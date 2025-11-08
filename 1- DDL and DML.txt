@@ -1,0 +1,106 @@
+create table Customer (
+Account_no int primary key,
+Name varchar (20) not null,
+Balance int not null,
+City varchar (20)
+);
+
+create table Loan (
+Loan_no int primary key,
+Name varchar (20) not null,
+Loan_amount int check (Loan_amount > 0)
+);
+
+insert into Customer 
+values 
+(1, "Ram", 10000, "Pune"),
+(2, "Ravi", 25000, "Nashik"), 
+(3, "Sachin", 30000, "Mumbai");
+
+insert into Loan 
+values
+(1,"Ram",10000), 
+(2, "Ravi", 50000), 
+(3, "Dipak",40000);
+
+--customer having account in the bank or taken the loan from the bank(union)
+select Name from Loan
+union
+select Name from Customer;
+
+-- customer having account as well as loan in the bank(intersect)
+SELECT Name
+FROM Loan
+WHERE Name IN 
+(SELECT Name FROM Customer);
+
+-- customer having account in the bank but not taken the loan(minus/except)
+SELECT Name
+FROM Loan
+WHERE Name NOT IN 
+(SELECT Name FROM Customer);
+
+SELECT Name
+FROM Customer
+WHERE Name NOT IN (SELECT Name FROM Loan);
+
+-- view to display customer having balance greater than 20000
+CREATE VIEW high_balance AS
+SELECT *
+FROM Customer
+WHERE Balance > 20000;
+
+SELECT * FROM high_balance;
+
+-- display customer from nasik having Balance greater than 20000
+CREATE VIEW nashik_high_balance AS
+SELECT *
+FROM Customer
+WHERE City = 'Nashik'
+AND Balance > 20000;
+
+SELECT * from nashik_high_balance;
+
+--index on name column
+CREATE INDEX idx_customer_name ON Customer(Name);
+SHOW INDEXES FROM Customer;
+
+--Composite index on Account_no and name column
+CREATE INDEX idx_customer_acc_name
+ON Customer(Account_no, Name);
+
+SHOW INDEXES FROM Customer;
+
+-- Customer in the ascending order of Balance
+SELECT *
+FROM Customer
+ORDER BY Balance ASC;
+
+--borrowers (loan holders) in the descending order of loan_amount.
+SELECT *
+FROM Loan
+ORDER BY Loan_amount DESC;
+
+-- interest on given loan for 20 year (Synonym)
+
+CREATE VIEW loan_synonym AS
+SELECT * FROM Loan;
+
+SELECT 
+  Loan_no,
+  Name,
+  Loan_amount,
+  Loan_amount * 0.05 * 20 AS Interest_20yr
+FROM loan_synonym;
+
+
+
+
+
+
+
+
+
+
+
+
