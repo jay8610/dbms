@@ -1,0 +1,107 @@
+create table student_marks (
+Rollno int primary key,
+Name varchar (20),
+Marks int,
+Branch varchar (20)
+);
+
+insert into student_marks values
+(1, "Ravi", 90, "Computer"),
+(2, "Vedika", 70, "Computer"),
+(3, "Aarush", 95, "IT"),
+(4, "Jyoti", 60, "IT");
+
+select * from student_marks
+where 
+Marks > 70;
+
+select * from student_marks
+where 
+Marks < 70;
+
+select from student_marks
+where
+Marks = 70 and Name = 'Vedika';
+
+update student_marks
+set Name = 'Sachin'
+where Name = 'Ravi';
+
+delete from student_marks
+where Name = 'Aarush';
+
+--function to display max marks
+
+create function max_marks()
+returns table 
+return (
+select * from student_marks
+where Marks = (select max (Marks) from student_marks)
+);
+
+--Aggregation by branch
+
+SELECT 
+  Branch,
+  MIN(Marks) AS Min_Mark,
+  MAX(Marks) AS Max_Mark,
+  AVG(Marks) AS Avg_Mark,
+  SUM(Marks) AS Total_Mark,
+  COUNT(*) AS Student_Count
+FROM student_Marks
+GROUP BY Branch;
+
+
+CREATE TABLE student_info (
+  Rollno INT,
+  Name VARCHAR(30),
+  Address VARCHAR(30)
+);
+
+
+INSERT INTO Student_Info VALUES
+(1, 'Ravi', 'Nashik'),
+(2, 'Vedika', 'Nashik'),
+(5, 'Tushar', 'Pune'),
+(6, 'Varsha', 'Mumbai');
+
+
+-- Inner join (student present in both tables)
+
+SELECT sm.Rollno, sm.Name, sm.Marks, si.Address
+FROM Student_Mark sm
+INNER JOIN Student_Info si
+ON sm.Rollno = si.Rollno;
+
+-- Left outer join (all students from sm + address from si if exists)
+
+SELECT sm.Rollno, sm.Name, sm.Marks, si.Address
+FROM Student_Mark sm
+LEFT JOIN Student_Info si
+ON sm.Rollno = si.Rollno;
+
+
+-- Right outer join (all students from si + marks if exists)
+
+SELECT sm.Rollno, sm.Name, sm.Marks, si.Address
+FROM Student_Mark sm
+RIGHT JOIN Student_Info si
+ON sm.Rollno = si.Rollno;
+
+
+-- Full outer join (Left outer join union right outer join)
+
+SELECT sm.Rollno, sm.Name, sm.Marks, si.Address
+FROM Student_Mark sm
+LEFT JOIN Student_Info si
+ON sm.Rollno = si.Rollno
+
+UNION
+
+SELECT sm.Rollno, sm.Name, sm.Marks, si.Address
+FROM Student_Mark sm
+RIGHT JOIN Student_Info si
+ON sm.Rollno = si.Rollno;
+
+
+
