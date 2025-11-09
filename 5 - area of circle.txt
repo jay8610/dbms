@@ -1,0 +1,70 @@
+-- ========= 1. SETUP THE TABLE =========
+-- Drop the table if it already exists
+DROP TABLE IF EXISTS areas;
+
+-- Create the empty table with all 4 columns
+CREATE TABLE areas (
+    radius INT,
+    area DECIMAL(14, 4),
+    diameter INT,
+    circumference DECIMAL(14, 4)
+);
+
+
+-- ========= 2. THE STORED PROCEDURE (Your LOOP style) =========
+
+-- Drop the procedure if it exists
+DROP PROCEDURE IF EXISTS sp_calculate_circle_areas;
+
+-- Change the delimiter
+DELIMITER //
+
+CREATE PROCEDURE sp_calculate_circle_areas()
+BEGIN
+    -- Declare variables. It's better to use INT for the radius.
+    DECLARE v_radius INT DEFAULT 5;
+    DECLARE v_area DECIMAL(14, 4);
+    DECLARE v_diameter INT;
+    DECLARE v_circumference DECIMAL(14, 4);
+
+    -- Start the loop with the label 'cloop'
+    cloop: LOOP
+    
+        -- 1. Check the exit condition *first*.
+        --    This is the safest way to use LOOP.
+        IF v_radius > 9 THEN
+            LEAVE cloop;
+        END IF;
+        
+        -- 2. Calculate values using the *current* radius
+        --    We use the built-in PI() function for accuracy
+        SET v_area = PI() * POW(v_radius, 2); -- POW(radius, 2) is radius^2
+        SET v_diameter = 2 * v_radius;
+        SET v_circumference = 2 * PI() * v_radius;
+        
+        -- 3. Insert the *current* radius and its calculated values
+        INSERT INTO areas (radius, area, diameter, circumference)
+        VALUES (v_radius, v_area, v_diameter, v_circumference);
+        
+        -- 4. Increment the radius *last*, after all work is done.
+        SET v_radius = v_radius + 1;
+        
+    END LOOP cloop;
+    
+    -- Add a message to confirm it's done
+    SELECT 'Successfully populated the areas table.' AS Message;
+
+END;
+//
+
+-- Reset the delimiter
+DELIMITER ;
+
+
+-- ========= 3. EXECUTION AND VERIFICATION =========
+
+-- Run the procedure
+CALL sp_calculate_circle_areas();
+
+-- Check the results in the table
+SELECT * FROM areas;

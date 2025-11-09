@@ -1,0 +1,61 @@
+-- ========= 1. SETUP THE TABLES (Same as before) =========
+DROP TABLE IF EXISTS Result;
+DROP TABLE IF EXISTS Stud_Marks;
+
+CREATE TABLE Stud_Marks (
+    rollno INT PRIMARY KEY,
+    name VARCHAR(100),
+    marks INT
+);
+
+CREATE TABLE Result (
+    rollno INT,
+    name VARCHAR(100),
+    class VARCHAR(50)
+);
+
+INSERT INTO Stud_Marks (rollno, name, marks) VALUES
+(101, 'Anil', 1100),  -- Distinction
+(102, 'Sunita', 950),   -- First Class
+(103, 'Ravi', 875),     -- Higher Second Class
+(104, 'Priya', 800);     -- Pass
+
+
+-- ========= 2. THE SIMPLER PROCEDURE =========
+-- We use INSERT...SELECT with a CASE statement
+
+DELIMITER //
+
+CREATE PROCEDURE proc_Grade_Simple()
+BEGIN
+    -- Optional: Empty the table first so you can run this many times
+    TRUNCATE TABLE Result;
+
+    -- This one query does everything your cursor loop did:
+    INSERT INTO Result (rollno, name, class)
+    SELECT
+        rollno,
+        name,
+        CASE
+            WHEN (marks <= 1500 AND marks >= 990) THEN 'Distinction'
+            WHEN (marks <= 989 AND marks >= 900)  THEN 'First Class'
+            WHEN (marks <= 899 AND marks >= 825)  THEN 'Higher Second Class'
+            ELSE 'Pass'
+        END AS calculated_class
+    FROM
+        Stud_Marks;
+        
+    SELECT 'All students categorized in a single step.' AS Message;
+
+END //
+
+DELIMITER ;
+
+
+-- ========= 3. EXECUTION AND VERIFICATION =========
+
+-- Run the simple procedure
+CALL proc_Grade_Simple();
+
+-- Check the results
+SELECT * FROM Result;
