@@ -1,0 +1,52 @@
+// ---------------------------------
+// 1. SETUP
+// ---------------------------------
+use TEB_18
+db.TE.drop() // Clear old data
+db.Total_Marks.drop()
+db.Total_Marks_Agg.drop()
+
+// Insert sample data
+db.TE.insertMany([
+  {Rollno:1, Marks:98, Div:'B'},
+  {Rollno:2, Marks:90, Div:'A'},
+  {Rollno:3, Marks:84, Div:'A'},
+  {Rollno:4, Marks:70, Div:'A'}
+])
+
+print("--- Original Data in 'TE' collection ---")
+db.TE.find().pretty()
+
+// ---------------------------------
+// 2. DEPRECATED MapReduce Method 
+// ---------------------------------
+print("--- Running deprecated mapReduce... ---")
+db.TE.mapReduce(
+  function() { emit(this.Rollno, this.Marks); },
+  function(key, values) { return Array.sum(values); },
+  {
+    query: { Div: "A" },
+    out: "Total_Marks"
+  }
+)
+
+print("--- Result from 'Total_Marks' (MapReduce) ---")
+db.Total_Marks.find().pretty()
+
+// ---------------------------------
+// 3. MODERN Aggregation Method
+// ---------------------------------
+print("--- Running modern aggregate pipeline... ---")
+db.TE.aggregate([
+  { $match: { Div: "A" } },
+  { 
+    $group: {
+      _id: "$Rollno",
+      value: { $sum: "$Marks" }
+    }
+  },
+  { $out: "Total_Marks_Agg" }
+])
+
+print("--- Result from 'Total_Marks_Agg' (Aggregation) ---")
+db.Total_Marks_Agg.find().pretty()

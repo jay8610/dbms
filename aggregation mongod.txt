@@ -1,0 +1,92 @@
+// ---------------------------------
+// 1. SETUP
+// ---------------------------------
+// Switch to (or create) the database
+use TEB_18
+
+// Clear the collection for a fresh start (optional)
+db.student.drop()
+
+// Insert all student documents
+db.student.insertMany([
+  {RollNo:1,Name:"Ram",Branch:"Computer",Marks:95},
+  {RollNo:2,Name:"Ravi",Branch:"Computer",Marks:90},
+  {RollNo:3,Name:"Jayesh",Branch:"Computer",Marks:97},
+  {RollNo:4,Name:"Rohan",Branch:"Computer",Marks:70},
+  {RollNo:5,Name:"Pande",Branch:"Computer",Marks:85},
+  {RollNo:6,Name:"Pranav",Branch:"IT",Marks:54},
+  {RollNo:6,Name:"Devang",Branch:"IT",Marks:60}
+])
+
+// ---------------------------------
+// 2. AGGREGATION QUERIES
+// ---------------------------------
+
+// A. Find Total Marks per Branch
+print("--- Total Marks per Branch ---")
+db.student.aggregate([
+  { $group: { _id: "$Branch", Total_Marks: { $sum: "$Marks" } } }
+])
+
+// B. Find Maximum Marks per Branch
+print("--- Maximum Marks per Branch ---")
+db.student.aggregate([
+  { $group: { _id: "$Branch", Maximum_Marks: { $max: "$Marks" } } }
+])
+
+// C. Find Minimum Marks per Branch
+print("--- Minimum Marks per Branch ---")
+db.student.aggregate([
+  { $group: { _id: "$Branch", Minimum_Marks: { $min: "$Marks" } } }
+])
+
+// D. Find Average Marks per Branch
+print("--- Average Marks per Branch ---")
+db.student.aggregate([
+  { $group: { _id: "$Branch", Avg_Marks: { $avg: "$Marks" } } }
+])
+
+// ---------------------------------
+// 3. FIND (FILTER) QUERIES
+// (These queries benefit from indexing)
+// ---------------------------------
+
+// Find students with Marks less than 92 ($lt)
+print("--- Students with Marks < 92 ---")
+db.student.find({"Marks":{$lt:92}}).pretty()
+
+// Find students with Marks greater than 92 ($gt)
+print("--- Students with Marks > 92 ---")
+db.student.find({"Marks":{$gt:92}}).pretty()
+
+// Find students with Marks equal to 95 ($eq)
+print("--- Students with Marks = 95 ---")
+db.student.find({"Marks":{$eq:95}}).pretty()
+
+// Find students with Marks not equal to 95 ($ne)
+print("--- Students with Marks != 95 ---")
+db.student.find({"Marks":{$ne:95}}).pretty()
+
+// Find students with Marks greater than or equal to 95 ($gte)
+print("--- Students with Marks >= 95 ---")
+db.student.find({"Marks":{$gte:95}}).pretty()
+
+// Find students with Marks less than or equal to 90 ($lte)
+print("--- Students with Marks <= 90 ---")
+db.student.find({"Marks":{$lte:90}}).pretty()
+
+// ---------------------------------
+// 4. INDEXING
+// ---------------------------------
+
+// A. Create a single-field index on Marks (ascending)
+print("--- Creating single-field index on Marks ---")
+db.student.createIndex({ Marks: 1 })
+
+// B. Create a compound index on Branch (ascending) and Marks (descending)
+print("--- Creating compound index on Branch and Marks ---")
+db.student.createIndex({ Branch: 1, Marks: -1 })
+
+// List all indexes on the collection to verify
+print("--- All indexes on 'student' collection ---")
+db.student.getIndexes()

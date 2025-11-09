@@ -1,0 +1,99 @@
+// ---------------------------------
+// Assignment no - 1(B): MongoDB CRUD Operations
+// ---------------------------------
+
+// ---------------------------------
+// 0. SETUP
+// ---------------------------------
+use TEB_18
+print("--- Dropping old 'Student' collection ---")
+db.Student.drop()
+
+// ---------------------------------
+// 1. C - CREATE
+// ---------------------------------
+print("--- 1. CREATING documents ---")
+// Insert multiple documents using insertMany()
+db.Student.insertMany([
+  { RollNo: 1, Name: "Sachin", City: "Nashik", Marks: 90, Pincode: 422005 },
+  { RollNo: 2, Name: "Ravi", City: "Pune", Marks: 70 },
+  { RollNo: 3, Name: "Sahil", City: "Mumbai", Marks: 50 },
+  { RollNo: 4, Name: "Vedika", City: "Nashik", Marks: 60, Pincode: 422005 }
+])
+
+// Insert a single document using insertOne()
+db.Student.insertOne(
+  { RollNo: 5, Name: "Akash", City: "Mumbai", Marks: 75 }
+)
+
+// ---------------------------------
+// 2. R - READ
+// ---------------------------------
+print("--- 2. READING documents ---")
+
+print("--- (All Students) ---")
+db.Student.find().pretty()
+
+print("--- (Students with Marks between 60 and 90) ---")
+db.Student.find({ 
+  Marks: { $gte: 60, $lte: 90 } 
+}).pretty()
+
+print("--- (Students not from Pune) ---")
+db.Student.find({ 
+  City: { $ne: "Pune" } 
+}).pretty()
+
+print("--- (Students named Ravi OR Marks > 80) ---")
+db.Student.find({ 
+  $or: [ 
+    { Name: "Ravi" }, 
+    { Marks: { $gt: 80 } } 
+  ] 
+}).pretty()
+
+print("--- (Students whose name starts with V) ---")
+db.Student.find({ 
+  Name: /^V/ 
+}).pretty()
+
+// ---------------------------------
+// 3. U - UPDATE
+// ---------------------------------
+print("--- 3. UPDATING documents ---")
+
+// updateMany() is the modern replacement for 'update(..., {multi: true})'
+print("--- (Adding 'Status: Pass' to students with Marks >= 60) ---")
+db.Student.updateMany(
+  { Marks: { $gte: 60 } },
+  { $set: { Status: "Pass" } }
+)
+
+print("--- (Updating Sahil's marks and adding Status) ---")
+db.Student.updateOne(
+  { Name: "Sahil" },
+  { $set: { Marks: 55, Status: "Fail" } }
+)
+
+print("--- (All Students after Updates) ---")
+db.Student.find().pretty()
+
+// ---------------------------------
+// 4. D - DELETE
+// ---------------------------------
+print("--- 4. DELETING documents ---")
+
+print("--- (Deleting Akash - RollNo 5) ---")
+db.Student.deleteOne({ RollNo: 5 })
+
+print("--- (Deleting all students with Status: Fail) ---")
+db.Student.deleteMany({ Status: "Fail" })
+
+print("--- (Final Student Data before drop) ---")
+db.Student.find().pretty()
+
+print("--- (Dropping 'Student' collection) ---")
+db.Student.drop()
+
+print("--- (Final list of collections) ---")
+show collections
