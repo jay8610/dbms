@@ -1,78 +1,47 @@
--- ========= 1. SETUP THE TABLES =========
-DROP TABLE IF EXISTS lib_Audit;
-DROP TABLE IF EXISTS lib_book;
-
--- Create the main table
-CREATE TABLE lib_book(
-    bid INT PRIMARY KEY, 
-    bname VARCHAR(20), 
-    qty INT
+create table lib_book (
+bid int primary key,
+bname varchar (30),
+qty int
 );
 
--- Create the Audit table with two *new* columns
-CREATE TABLE lib_Audit(
-    audit_id INT AUTO_INCREMENT PRIMARY KEY, -- Good to have a primary key
-    bid INT, 
-    bname VARCHAR(20), 
-    qty INT,
-    action_type VARCHAR(10),   -- To store 'UPDATE' or 'DELETE'
-    action_time DATETIME DEFAULT CURRENT_TIMESTAMP -- To store *when* it happened
+create table lib_audit (
+audit_id int auto_increment primary key,
+bid int,
+bname varchar (30),
+qty int,
+action_type varchar (20),
+action_time datetime default current_timestamp
 );
 
--- Insert the sample data
-INSERT INTO lib_book VALUES(1,'DBMS',70);
-INSERT INTO lib_book VALUES(2,'SPOS',40);
-INSERT INTO lib_book VALUES(3,'SPM',10);
-INSERT INTO lib_book VALUES(4,'CNS',60);
-INSERT INTO lib_book VALUES(5,'TOC',20);
+insert into lib_book values
+(1, 'DBMS', 70),
+(2,'SPOS',40),
+(3,'SPM',10),
+(4,'CNS',60),
+(5,'TOC',20);
 
--- ========= 2. CREATE THE TRIGGERS =========
--- We must create two separate triggers. This is the correct MySQL way.
-
-DELIMITER //
-
--- Trigger 1: For UPDATE operations
-CREATE TRIGGER trg_book_after_update
-  AFTER UPDATE ON lib_book
-  FOR EACH ROW
-BEGIN
-    -- Insert the *OLD* data into the audit table
-    INSERT INTO lib_Audit (bid, bname, qty, action_type)
-    VALUES (OLD.bid, OLD.bname, OLD.qty, 'UPDATE');
-END;
+delimiter //
+create trigger t_update
+after update on lib_book
+for each row
+begin
+insert into lib_audit (bid, bname, qty, action_type)
+values (old.bid, old.bname, old.qty, 'UPDATE');
+end;
 //
 
--- Trigger 2: For DELETE operations
-CREATE TRIGGER trg_book_after_delete
-  AFTER DELETE ON lib_book
-  FOR EACH ROW
-BEGIN
-    -- Insert the *OLD* data that was deleted
-    INSERT INTO lib_Audit (bid, bname, qty, action_type)
-    VALUES (OLD.bid, OLD.bname, OLD.qty, 'DELETE');
-END;
+create trigger t_delete
+after delete on lib_book
+for each row
+begin
+insert into lib_audit (bid, bname, qty, action_type)
+values (old.bid, old.bname, old.qty, 'DELETE');
+end;
 //
-
-DELIMITER ;
-
--- ========= 3. TESTING THE TRIGGERS =========
-
--- Check the tables before we do anything
-SELECT * FROM lib_book;
-SELECT * FROM lib_Audit;
--- (lib_Audit is empty)
-
-
--- --- Test 1: Update a book ---
-UPDATE lib_book SET qty = 30 WHERE bid = 5;
-
--- --- Test 2: Delete a book ---
-DELETE FROM lib_book WHERE bid = 4;
-
-
--- --- Final Check ---
--- The main table shows the new, changed data
-SELECT * FROM lib_book;
-
--- The audit table now has a perfect log of the *old* data
-SELECT * FROM lib_Audit;
+delimiter ;
+select * from lib_book;
+select * from lib_audit;
+update lib_book set qty = 30 where bid = 5;
+delete from lib_book where bid = 4;
+select * from lib_book;
+select * from lib_audit;
