@@ -1,155 +1,67 @@
--- ========= PART 1: SETUP THE TABLES AND DATA =========
-
--- Clean up any old tables first
-DROP TABLE IF EXISTS Fine;
-DROP TABLE IF EXISTS Borrower;
-
--- Create the required tables
-CREATE TABLE Borrower (
-    Roll_no INT,
-    Name VARCHAR(100),
-    Date_of_Issue DATE,
-    Name_of_Book VARCHAR(100),
-    Status CHAR(1) -- 'I' for Issued, 'R' for Returned
+create table borrower (
+rollno int primary key,
+name varchar (20),
+idate date,
+bname varchar (40),
+status char (1)
 );
 
-CREATE TABLE Fine (
-    Roll_no INT,
-    Date DATE,
-    Amt DECIMAL(10, 2)
+create table fine (
+rollno int primary key,
+date date,
+amt decimal (10,2)
 );
 
--- Insert sample data to test all conditions
--- We use CURDATE() (today's date) to calculate past dates
-INSERT INTO Borrower VALUES
--- 101: 10 days ago -> Should be NO fine
-(101, 'Amit', DATE_SUB(CURDATE(), INTERVAL 10 DAY), 'SQL Basics', 'I'),
+insert into borrower values
+(1, 'Ram', date_sub(curdate(), interval 10 day), 'cs fundamentals','I'),
+(2, 'Ravi', date_sub(curdate(), interval 20 day), 'dsa','I'),
+(3, 'Jay', date_sub(curdate(), interval 35 day), 'oop','I'),
+(4, 'Priya', date_sub(curdate(), interval 40 day), 'sql basics','R');
 
--- 102: 20 days ago -> Should be 5/day fine
--- (20 - 15) * 5 = 25
-(102, 'Priya', DATE_SUB(CURDATE(), INTERVAL 20 DAY), 'Java Intro', 'I'),
-
--- 103: 35 days ago -> Should be 50/day fine
--- (15 * 5) + (5 * 50) = 75 + 250 = 325
-(103, 'Rahul', DATE_SUB(CURDATE(), INTERVAL 35 DAY), 'Data Structures', 'I'),
-
--- 104: Already returned -> For exception testing
-(104, 'Sunita', DATE_SUB(CURDATE(), INTERVAL 40 DAY), 'OS Concepts', 'R'),
-
--- 105: Has two books -> To test the "update" bug
-(105, 'Vikram', DATE_SUB(CURDATE(), INTERVAL 25 DAY), 'Book A', 'I'),
-(105, 'Vikram', DATE_SUB(CURDATE(), INTERVAL 30 DAY), 'Book B', 'I');
-
-
--- ========= PART 2: THE STORED PROCEDURE =========
-
--- Change the delimiter so ';' can be used inside
-DELIMITER //
-
-CREATE PROCEDURE sp_ReturnBook(
-    IN p_RollNo INT,
-    IN p_BookName VARCHAR(100)
+delimiter//
+create procedure p_returnbook(
+ in p_rollno int,
+ in p_bname varchar (40)
 )
-BEGIN
-    -- == 1. DECLARE VARIABLES ==
-    DECLARE v_IssueDate DATE;
-    DECLARE v_DaysHeld INT;
-    DECLARE v_FineAmount DECIMAL(10, 2) DEFAULT 0;
-    
-    -- This flag is for our exception handling
-    DECLARE v_BookFound INT DEFAULT 1;
-
-    -- == 2. DECLARE EXCEPTION HANDLER (Mandatory) ==
-    -- This "listens" for a "NOT FOUND" error from the SELECT query.
-    -- If it hears it, it sets our flag to 0 and continues.
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_BookFound = 0;
-
-    -- == 3. GET BOOK DETAILS ==
-    -- We *only* select the book if its Status is 'I' (Issued)
-    SELECT Date_of_Issue INTO v_IssueDate
-    FROM Borrower
-    WHERE Roll_no = p_RollNo 
-      AND Name_of_Book = p_BookName 
-      AND Status = 'I';
-
-    -- == 4. CHECK IF EXCEPTION OCCURRED (Control Structure) ==
-    -- If v_BookFound is 0, the SELECT failed (no such book or already returned)
-    IF v_BookFound = 0 THEN
-        -- This is our "user-defined exception handler"
-        SELECT 'EXCEPTION: Book not found, already returned, or not issued to this student.' AS Message;
-        
-    ELSE
-        -- If we are here, the book was found successfully.
-        
-        -- == 5. CALCULATE FINE (Control Structure) ==
-        SET v_DaysHeld = DATEDIFF(CURDATE(), v_IssueDate);
-
-        IF v_DaysHeld > 30 THEN
-            -- Correct Logic: 15 days at 5/day + remaining days at 50/day
-            SET v_FineAmount = (15 * 5) + ((v_DaysHeld - 30) * 50);
-            
-        ELSEIF v_DaysHeld > 15 THEN
-            -- Correct Logic: Only fine for days *after* 15
-            SET v_FineAmount = (v_DaysHeld - 15) * 5;
-            
-        END IF; -- If 15 days or less, fine remains 0
-
-        -- == 6. UPDATE STATUS AND INSERT FINE ==
-        
-        -- Update the status from 'I' to 'R'
-        -- CRITICAL FIX: We specify *both* Roll_no AND Name_of_Book
-        UPDATE Borrower
-        SET Status = 'R'
-        WHERE Roll_no = p_RollNo AND Name_of_Book = p_BookName;
-
-        -- If fine is true (greater than 0), store it.
-        IF v_FineAmount > 0 THEN
-            INSERT INTO Fine (Roll_no, Date, Amt)
-            VALUES (p_RollNo, CURDATE(), v_FineAmount);
-            
-            SELECT CONCAT('Book returned. Fine of Rs. ', v_FineAmount, ' applied.') AS Message;
-        ELSE
-            SELECT 'Book returned successfully. No fine.' AS Message;
-        END IF;
-        
-    END IF; -- End of the main IF v_BookFound
-
-END //
-
--- Reset the delimiter back to normal
-DELIMITER ;
+begin
+declare v_idate date;
+declare v_daycnt int;
+declare v_fineamt decimal (10,2) default 0;
+declare v_bookfound int default 1;
+declare continue handler for not found set v_bookfound = 0;
+select idate into v_idate
+from borrower
+where rollno = p_rollno
+and bname = p_bname
+and status = 'I';
+if v_bookfound = 0 then
+select 'exception: book not found or already returned' as message;
+else
+set v_daycnt = datediff(curdate(), v_idate);
+if v_daycnt > 30 then
+set v_fineamt = (15*5) + ((v_daycnt - 30) * 50);
+elseif v_daycnt > 15 then
+set v_fineamt = (v_daycnt - 15) * 5;
+end if;
+update borrower 
+set status = 'R'
+where rollno = p_rollno and bname = p_bname;
+if v_fineamt > 0 then
+insert into fine (rollno, date, amt)
+values (p_rollno, curdate(), v_fineamt);
+select concat('Book returned. Fine of Rs: ', v_fineamt, 'applied.') as message;
+else
+select 'Book returned no fine.' as message;
+end if;
+end if;
+end //
+delimiter ;
+call p_returnbook(1,'cs fundamentals');
+call p_returnbook(2,'dsa');
+call p_returnbook(3,'oop');
+call p_returnbook(4,'sql basics');
+select * from fine;
 
 
--- ========= PART 3: HOW TO TEST THE PROCEDURE =========
 
--- Test 1: No Fine (Student 101, 10 days)
-CALL sp_ReturnBook(101, 'SQL Basics');
--- Expected Output: 'Book returned successfully. No fine.'
 
--- Test 2: Low Fine (Student 102, 20 days)
-CALL sp_ReturnBook(102, 'Java Intro');
--- Expected Output: 'Book returned. Fine of Rs. 25.00 applied.'
-
--- Test 3: High Fine (Student 103, 35 days)
-CALL sp_ReturnBook(103, 'Data Structures');
--- Expected Output: 'Book returned. Fine of Rs. 325.00 applied.'
-
--- Test 4: Exception - Already Returned (Student 104)
-CALL sp_ReturnBook(104, 'OS Concepts');
--- Expected Output: 'EXCEPTION: Book not found...'
-
--- Test 5: Exception - Non-existent student/book
-CALL sp_ReturnBook(999, 'Fake Book');
--- Expected Output: 'EXCEPTION: Book not found...'
-
--- Test 6: Check the "Update Bug" (Student 105)
--- Let's return 'Book A' (25 days = 50 fine)
-CALL sp_ReturnBook(105, 'Book A');
--- Expected Output: 'Book returned. Fine of Rs. 50.00 applied.'
-
--- Now, check the status of Student 105's books:
-SELECT * FROM Borrower WHERE Roll_no = 105;
--- CORRECT Output:
--- 105 | Vikram | ... | Book A | R  <- Status is 'R'
--- 105 | Vikram | ... | Book B | I  <- Status is still 'I'
--- (Your old code would have set both to 'R')
