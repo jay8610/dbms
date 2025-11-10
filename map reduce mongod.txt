@@ -33,20 +33,8 @@ db.TE.mapReduce(
 print("--- Result from 'Total_Marks' (MapReduce) ---")
 db.Total_Marks.find().pretty()
 
-// ---------------------------------
-// 3. MODERN Aggregation Method
-// ---------------------------------
-print("--- Running modern aggregate pipeline... ---")
-db.TE.aggregate([
-  { $match: { Div: "A" } },
-  { 
-    $group: {
-      _id: "$Rollno",
-      value: { $sum: "$Marks" }
-    }
-  },
-  { $out: "Total_Marks_Agg" }
-])
+
 
 print("--- Result from 'Total_Marks_Agg' (Aggregation) ---")
+
 db.Total_Marks_Agg.find().pretty()
