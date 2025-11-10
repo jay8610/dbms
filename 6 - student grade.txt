@@ -17,7 +17,6 @@ insert into stud_marks (rollno, name, marks) values
 (104, 'Priya', 800);     -- Pass
 
 delimiter //
-
 create procedure proc_grade()
 begin
 insert into result (rollno, name, class)
@@ -37,6 +36,7 @@ END //
 delimiter ;
 call proc_grade();
 select * from result;
+
 
 
 
