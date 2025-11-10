@@ -1,80 +1,45 @@
--- ========= 1. SETUP THE TABLES (from your file) =========
-DROP TABLE IF EXISTS N_RollCall;
-DROP TABLE IF EXISTS O_RollCall;
+create table o_rollcall (
+rollno int primary key,
+name varchar (20)
+);
 
-CREATE TABLE O_RollCall(rollno INT PRIMARY KEY, name VARCHAR(20));
-CREATE TABLE N_RollCall(rollno INT PRIMARY KEY, name VARCHAR(20));
+create table n_rollcall (
+rollno int primary key,
+name varchar (20)
+);
 
--- Insert data into Old table
-INSERT INTO O_RollCall VALUES(1,'Ram');
-INSERT INTO O_RollCall VALUES(2,'Ravi');
-INSERT INTO O_RollCall VALUES(3,'Sarvesh');
+insert into o_rollcall values 
+(1, 'Ram'),
+(2, 'Ravi'),
+(3, 'Sarvesh');
 
--- Insert data into New table
-INSERT INTO N_RollCall VALUES(2,'Ravi');    -- This one already exists
-INSERT INTO N_RollCall VALUES(4,'Jayesh');  -- This one is only in the new table
+insert into n_rollcall values 
+(2, 'Ravi'),
+(4, 'Jayesh');
 
--- ========= 2. THE CURSOR PROCEDURE (Your Code) =========
-DROP PROCEDURE IF EXISTS proc_MergeRollCall;
-DELIMITER //
+delimiter //
+create procedure p_merge()
+begin
+declare v_rollno int;
+declare v_name varchar (20);
+declare v_done int default 0;
+declare c_students cursor for
+select rollno, name
+from o_rollcall
+where rollno not in (select rollno from n_rollcall);
+declare continue handler for not found set v_done = 1;
+open c_students;
+read_loop : loop
+fetch c_students into v_rollno, v_name;
+if v_done = 1 then 
+leave read_loop;
+end if;
+insert into n_rollcall(rollno, name) values (v_rollno, v_name);
+end loop;
+close c_students;
+end //
 
-CREATE PROCEDURE proc_MergeRollCall()
-BEGIN
-    -- 1. Declare variables to hold the data from the cursor
-    DECLARE v_rollno INT;
-    DECLARE v_name VARCHAR(20);
-    
-    -- 2. Declare the "done" flag for the loop
-    DECLARE v_done INT DEFAULT 0;
+delimiter ;
 
-    -- 3. Declare the CURSOR
-    -- This SELECT is the most important part.
-    -- It *only* selects students from O_RollCall that are
-    -- NOT IN N_RollCall. This pre-filters the data.
-    DECLARE c_students CURSOR FOR
-        SELECT rollno, name
-        FROM O_RollCall
-        WHERE rollno NOT IN (SELECT rollno FROM N_RollCall);
-
-    -- 4. Declare the "NOT FOUND" handler
-    -- When the cursor runs out of rows, it sets v_done = 1
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
-
-    -- 5. Open the cursor to start
-    OPEN c_students;
-    
-    -- 6. Start the loop
-    read_loop: LOOP
-        -- 7. Get one row from the cursor's result set
-        FETCH c_students INTO v_rollno, v_name;
-        
-        -- 8. If v_done = 1 (no more rows), leave the loop
-        IF v_done = 1 THEN
-            LEAVE read_loop;
-        END IF;
-        
-        -- 9. Insert the row into the new table
-        -- We know it's safe because the cursor only selected
-        -- rows that *don't* already exist.
-        INSERT INTO N_RollCall(rollno, name) VALUES(v_rollno, v_name);
-        
-    END LOOP;
-    
-    -- 10. Close the cursor
-    CLOSE c_students;
-    
-    SELECT 'Successfully merged data.' AS Message;
-
-END //
-DELIMITER ;
-
--- ========= 3. EXECUTION AND VERIFICATION =========
-
--- Run the procedure
-CALL proc_MergeRollCall();
-
--- Check the final result
--- Rollno 1 (Ram) and 3 (Sarvesh) should be added.
--- Rollno 2 (Ravi) was skipped (correct).
--- Rollno 4 (Jayesh) was already there.
-SELECT * FROM N_RollCall;
+call p_merge();
+select * from n_rollcall;
